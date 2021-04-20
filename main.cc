@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <iostream>
 #include <chrono>
+#include <vector>
 
 #define num_threads 27
 #define ROWS 9
@@ -76,8 +77,8 @@ int sudoku_checker(int sudoku[9][9]);
 
 bool verifyRow();
 bool verifyColumn();
-bool verifySubgrid();
-bool verifySudoku();
+bool verifyGrid();
+bool verifySudokuBySingleThread();
 
 /***************
  * ENTRY POINT *
@@ -353,25 +354,28 @@ int sudoku_checker(int sudoku[9][9])
 }
 
 /* For single thread */
-bool verifySudoku() {
-    //Check rows, columns and sub-grids
-    if (verifyRow() && verifyColumn() && verifySubgrid()) {
-        //Validation passed
-        return true;
-    }else {
-        //Validation failed
+bool verifySudokuBySingleThread(){
+    if (!verifyRow()){
         return false;
     }
+    if (!verifyColumn()){
+        return false;
+    }
+    if (!verifyGrid()) {
+        return false;
+    }
+    return true;
 }
 
 bool verifyRow(){
     for(int i=0; i<ROWS; i++){
-        int validityNumbers[ROWS] = {0};
-        for(int j=0; j<COLS; j++){
-            if(validityNumbers[sudoku[i][j] - 1] != 0){
+        vector<bool> numbers(ROWS, false);
+        for(int j=0; j<COLUMNS; j++){
+                numbers[sudoku[i][j]-1] = !numbers[sudoku[i][j]-1];
+        }
+        for(auto i : numbers){
+            if(!i){
                 return false;
-            }else{
-                validityNumbers[sudoku[i][j] - 1] = 1;
             }
         }
     }
@@ -379,39 +383,34 @@ bool verifyRow(){
 }
 
 bool verifyColumn(){
-    for(int i=0; i<COLS; i++){
-        int validityNumbers[COLS] = {0};
-        for(int j=0; j<ROWS; j++){
-            if(validityNumbers[sudoku[j][i] - 1] != 0){
+    for(int i=0; i<ROWS; i++){
+        vector<bool> numbers(ROWS, false);
+        for(int j=0; j<COLUMNS; j++){
+            numbers[sudoku[j][i]-1] = !numbers[sudoku[j][i]-1];
+        }
+        for(auto i : numbers){
+            if(!i){
                 return false;
-            }else{
-                validityNumbers[sudoku[j][i] - 1] = 1;
             }
         }
     }
     return true;
 };
 
-bool verifySubgrid(){
-    int temp_row, temp_col;
-
-    for (int i = 0; i < 3; ++i)
-    {
-        for (int j = 0; j < 3; ++j)
-        {
-            temp_row = 3 * i;
-            temp_col = 3 * j;
-            int validityNumbers[ROWS] = {0};
-
-            for(int p=temp_row; p < temp_row+3; p++)
-            {
-                for(int q=temp_col; q < temp_col+3; q++)
-                {
-                    int val = sudoku[p][q];
-                    if (validityNumbers[val-1] != 0)
-                        return false;
-                    else
-                        validityNumbers[val-1] = 1;
+bool verifyGrid(){
+    for (int i = 0; i < 3; ++i){
+        for (int j = 0; j < 3; ++j){
+            int grid_row = 3 * i;
+            int grid_column = 3 * j;
+            vector<bool> numbers(ROWS, false);
+            for(int r=grid_row; r < grid_row+3; r++){
+                for(int c=grid_column; c < grid_column+3; c++){
+                    numbers[sudoku[r][c]-1] = !numbers[sudoku[r][c]-1];
+                }
+            }
+            for(auto i : numbers){
+                if(!i){
+                    return false;
                 }
             }
         }
